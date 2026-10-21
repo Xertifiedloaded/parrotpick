@@ -113,7 +113,6 @@ export default function SignupPage() {
 
   return (
     <main className="relative isolate flex min-h-[calc(100vh-100px)] items-center justify-center overflow-hidden bg-[#edf3e9] px-4 py-12 sm:px-6 lg:px-8">
-      {/* Football background */}
       <div className="absolute inset-0 -z-20">
         <img
           src={Football.src}
