@@ -8,11 +8,7 @@ export default function Logo({ light = false }: { light?: boolean }) {
           className="h-full w-full object-cover"
         />
       </span>
-      <span
-        className={`text-xl font-extrabold leading-[1.05] tracking-tight ${
-          light ? "text-lime-400" : "text-[#19752b]"
-        }`}
-      >
+      <span className={`text-xl font-extrabold leading-[1.05] tracking-tight ${light ? "text-lime-400" : "text-[#19752b]"}`}>
         Parrot
         <br />
         Picks

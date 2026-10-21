@@ -1,15 +1,13 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { PENDING_COOKIE, SESSION_COOKIE } from "@/lib/constants";
 import { verifyPendingToken, verifySessionToken } from "@/lib/jwt";
 
 // Pages that need a logged-in user
-const PROTECTED_PAGES = ["/predictions", "/dashboard1", "/profile"];
+const PROTECTED_PAGES = ["/predictions", "/dashboard", "/profile"];
 // Pages a logged-in user has no reason to see
 const AUTH_PAGES = ["/login", "/signup"];
 
-const matches = (pathname: string, base: string) =>
-  pathname === base || pathname.startsWith(`${base}/`);
+const matches = (pathname: string, base: string) => pathname === base || pathname.startsWith(`${base}/`);
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -26,10 +24,7 @@ export async function proxy(req: NextRequest) {
     }
 
     if (!userId) {
-      return NextResponse.json(
-        { success: false, code: "UNAUTHORIZED", message: "Please log in to continue." },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, code: "UNAUTHORIZED", message: "Please log in to continue." }, { status: 401 });
     }
     return NextResponse.next({ request: { headers } });
   }

@@ -1,12 +1,6 @@
 // Edge-safe (jose only). Used by both route handlers and middleware.ts.
 import { SignJWT, jwtVerify } from "jose";
-import {
-  JWT_AUD_SESSION,
-  JWT_AUD_VERIFY,
-  JWT_ISSUER,
-  PENDING_MAX_AGE_S,
-  SESSION_MAX_AGE_S,
-} from "@/lib/constants";
+import { JWT_AUD_SESSION, JWT_AUD_VERIFY, JWT_ISSUER, PENDING_MAX_AGE_S, SESSION_MAX_AGE_S } from "@/lib/constants";
 
 function key() {
   const secret = process.env.JWT_SECRET;
@@ -41,10 +35,8 @@ async function verify(token: string, audience: string): Promise<string | null> {
 }
 
 // Separate audiences so a verification token can never be used as a session.
-export const signSessionToken = (userId: string) =>
-  sign(userId, JWT_AUD_SESSION, SESSION_MAX_AGE_S);
-export const signPendingToken = (userId: string) =>
-  sign(userId, JWT_AUD_VERIFY, PENDING_MAX_AGE_S);
+export const signSessionToken = (userId: string) => sign(userId, JWT_AUD_SESSION, SESSION_MAX_AGE_S);
+export const signPendingToken = (userId: string) => sign(userId, JWT_AUD_VERIFY, PENDING_MAX_AGE_S);
 
 export const verifySessionToken = (token: string) => verify(token, JWT_AUD_SESSION);
 export const verifyPendingToken = (token: string) => verify(token, JWT_AUD_VERIFY);

@@ -22,11 +22,7 @@ export async function requireSession(req: NextRequest) {
 export async function requirePendingVerification(req: NextRequest) {
   const userId = await getPendingUserId(req);
   if (!userId) {
-    throw new AppError(
-      401,
-      "VERIFICATION_SESSION_MISSING",
-      "Your verification session has expired. Please sign up or log in again."
-    );
+    throw new AppError(401, "VERIFICATION_SESSION_MISSING", "Your verification session has expired. Please sign up or log in again.");
   }
   return userId;
 }

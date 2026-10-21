@@ -1,16 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  faArrowUpRightFromSquare,
-  faEnvelope,
-  faMedal,
-} from "@fortawesome/free-solid-svg-icons";
-import {
-  faFacebookF,
-  faInstagram,
-  faYoutube,
-} from "@fortawesome/free-brands-svg-icons";
+import { faArrowUpRightFromSquare, faEnvelope, faMedal } from "@fortawesome/free-solid-svg-icons";
+import { faFacebookF, faInstagram, faYoutube } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Logo from "@/components/Logo";
 
@@ -25,12 +17,7 @@ const resourceLinks = [
   ["FAQs", "/faqs"],
 ];
 
-const legalLinks = [
-  "Community Guidelines",
-  "Privacy Policy",
-  "Terms & Conditions",
-  "Responsible Play",
-];
+const legalLinks = ["Community Guidelines", "Privacy Policy", "Terms & Conditions", "Responsible Play"];
 
 const socialLinks = [
   { name: "Facebook", href: "https://facebook.com", icon: faFacebookF },
@@ -46,18 +33,14 @@ export default function Footer() {
   }, []);
 
   return (
-    <footer
-      id="footer"
-      className="border-t-[5px] border-[#d5b52b] bg-[#303130] text-white/70"
-    >
+    <footer id="footer" className="border-t-[5px] border-[#d5b52b] bg-[#303130] text-white/70">
       <div className="mx-auto max-w-7xl px-5 py-10 lg:px-10 lg:py-14">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr]">
           <div>
             <Logo light />
 
             <p className="mt-5 max-w-xs text-xs leading-6 text-white/50">
-              Your home for football predictions, match-day excitement, and
-              friendly competition. All for free.
+              Your home for football predictions, match-day excitement, and friendly competition. All for free.
             </p>
 
             <span className="mt-4 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-lime-400">
@@ -93,18 +76,11 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 className="mb-4 text-sm font-bold text-white">
-              Connect with Us
-            </h3>
+            <h3 className="mb-4 text-sm font-bold text-white">Connect with Us</h3>
 
-            <p className="text-xs leading-6 text-white/50">
-              Have a question or suggestion? We'd love to hear from you.
-            </p>
+            <p className="text-xs leading-6 text-white/50">Have a question or suggestion? We'd love to hear from you.</p>
 
-            <a
-              href="mailto:support@parrotpicks.com"
-              className="mt-3 inline-flex items-center gap-2 text-xs text-lime-300 hover:text-white"
-            >
+            <a href="mailto:support@parrotpicks.com" className="mt-3 inline-flex items-center gap-2 text-xs text-lime-300 hover:text-white">
               <FontAwesomeIcon icon={faEnvelope} />
               support@parrotpicks.com
             </a>

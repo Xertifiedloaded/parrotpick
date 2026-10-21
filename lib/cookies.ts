@@ -1,5 +1,5 @@
 import type { NextResponse } from "next/server";
-import {PENDING_COOKIE, PENDING_MAX_AGE_S,SESSION_COOKIE,SESSION_MAX_AGE_S} from "@/lib/constants";
+import { PENDING_COOKIE, PENDING_MAX_AGE_S, SESSION_COOKIE, SESSION_MAX_AGE_S } from "@/lib/constants";
 
 const base = {
   httpOnly: true,

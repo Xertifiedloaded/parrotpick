@@ -1,21 +1,12 @@
 import type { NextRequest } from "next/server";
-import {
-  clearPendingCookie,
-  clearSessionCookie,
-  setPendingCookie,
-  setSessionCookie,
-} from "@/lib/cookies";
+import { clearPendingCookie, clearSessionCookie, setPendingCookie, setSessionCookie } from "@/lib/cookies";
 import { AppError } from "@/lib/errors";
 import { errorResponse, ok, parseBody } from "@/lib/http";
 import { signPendingToken, signSessionToken } from "@/lib/jwt";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { requirePendingVerification, requireSession } from "@/lib/session";
 import { authService, toPublicUser } from "@/server/services/auth.service";
-import {
-  loginSchema,
-  signupSchema,
-  verifyEmailSchema,
-} from "@/server/validators/auth.validator";
+import { loginSchema, signupSchema, verifyEmailSchema } from "@/server/validators/auth.validator";
 
 const MIN = 60 * 1000;
 
@@ -26,11 +17,7 @@ export const authController = {
     const input = await parseBody(req, signupSchema);
     const user = await authService.signup(input);
 
-    const res = ok(
-      { user: toPublicUser(user), nextStep: "verify-email" },
-      "Account created. Check your email for the 6-digit code.",
-      201
-    );
+    const res = ok({ user: toPublicUser(user), nextStep: "verify-email" }, "Account created. Check your email for the 6-digit code.", 201);
     setPendingCookie(res, await signPendingToken(user.id));
     return res;
   },
@@ -45,12 +32,7 @@ export const authController = {
     const { user, needsVerification } = await authService.login(input);
 
     if (needsVerification) {
-      const res = errorResponse(
-        403,
-        "EMAIL_NOT_VERIFIED",
-        "Please verify your email to continue.",
-        { data: { nextStep: "verify-email" } }
-      );
+      const res = errorResponse(403, "EMAIL_NOT_VERIFIED", "Please verify your email to continue.", { data: { nextStep: "verify-email" } });
       setPendingCookie(res, await signPendingToken(user.id));
       return res;
     }

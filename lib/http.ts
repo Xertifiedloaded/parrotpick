@@ -12,7 +12,7 @@ export function errorResponse(
   status: number,
   code: string,
   message: string,
-  extra: { fields?: Record<string, string>; retryAfter?: number; data?: unknown } = {}
+  extra: { fields?: Record<string, string>; retryAfter?: number; data?: unknown } = {},
 ) {
   const res = NextResponse.json(
     {
@@ -23,17 +23,14 @@ export function errorResponse(
       retryAfter: extra.retryAfter,
       data: extra.data,
     },
-    { status }
+    { status },
   );
   if (extra.retryAfter) res.headers.set("Retry-After", String(extra.retryAfter));
   return res;
 }
 
 /** Parses and validates a JSON body. Throws AppError / ZodError. */
-export async function parseBody<S extends ZodTypeAny>(
-  req: NextRequest,
-  schema: S
-): Promise<z.infer<S>> {
+export async function parseBody<S extends ZodTypeAny>(req: NextRequest, schema: S): Promise<z.infer<S>> {
   let json: unknown;
   try {
     json = await req.json();

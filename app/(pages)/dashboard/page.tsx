@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -6,7 +7,6 @@ import {
   useId,
   useRef,
   useState,
-  type ChangeEvent,
   type ComponentType,
   type ReactNode,
 } from "react";
@@ -24,22 +24,18 @@ import {
   User,
   Wallet,
   X,
-  type LucideProps,
+  LoaderCircle,
+  CheckCircle2,
 } from "lucide-react";
-import Football from '@/assets/images/football.jpg'
+import type { LucideProps } from "lucide-react";
+import Football from "@/assets/images/football.jpg";
+import { api, errorMessage } from "@/lib/api";
+import type { ProfileResponse, UserProfile } from "@/types/profile";
 
-
-const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_PHOTO_SIZE = 5 * 1024 * 1024;
 
 const DEFAULT_AVATAR =
   "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=85";
-
-
-const USER = {
-  firstname: "Adeyemi",
-  surname: "Biola",
-  username: "Adeyemi001",
-} as const;
 
 type Icon = ComponentType<LucideProps>;
 
@@ -48,12 +44,27 @@ const ACCOUNT_ITEMS: ReadonlyArray<{
   icon: Icon;
   href: string;
 }> = [
-  { title: "Personal Details", icon: User, href: "/dashboard/personal-details" },
-  { title: "Withdrawal Details", icon: Wallet, href: "/dashboard/withdrawal-details" },
-  { title: "Total Points", icon: CirclePlus, href: "/dashboard/points" },
-  { title: "Prediction History", icon: History, href: "/dashboard/prediction-history" },
+  {
+    title: "Personal Details",
+    icon: User,
+    href: "/dashboard/personal-details",
+  },
+  {
+    title: "Withdrawal Details",
+    icon: Wallet,
+    href: "/dashboard/withdrawal-details",
+  },
+  {
+    title: "Total Points",
+    icon: CirclePlus,
+    href: "/dashboard/points",
+  },
+  {
+    title: "Prediction History",
+    icon: History,
+    href: "/dashboard/prediction-history",
+  },
 ];
-
 
 const rowClasses =
   "group flex min-h-[54px] w-full items-center gap-3 rounded-xl bg-white px-3 py-3 text-left transition hover:shadow-sm sm:min-h-[58px] sm:px-4";
@@ -67,17 +78,18 @@ function MenuRowContent({
   title: string;
   danger?: boolean;
 }) {
-  const hover = danger ? "group-hover:text-red-500" : "group-hover:text-[#57945a]";
-  const textHover = danger ? "group-hover:text-red-500" : "group-hover:text-[#267b32]";
-
   return (
     <>
       <IconComponent
         aria-hidden
-        className={`h-6 w-6 shrink-0 text-[#b3b3b3] transition sm:h-7 sm:w-7 ${hover}`}
+        className={`h-6 w-6 shrink-0 text-[#b3b3b3] transition sm:h-7 sm:w-7 ${
+          danger ? "group-hover:text-red-500" : "group-hover:text-[#57945a]"
+        }`}
       />
       <span
-        className={`min-w-0 flex-1 text-base font-medium text-[#858585] transition sm:text-lg ${textHover}`}
+        className={`min-w-0 flex-1 text-base font-medium text-[#858585] transition sm:text-lg ${
+          danger ? "group-hover:text-red-500" : "group-hover:text-[#267b32]"
+        }`}
       >
         {title}
       </span>
@@ -98,13 +110,12 @@ function Modal({
   onClose: () => void;
   children: ReactNode;
 }) {
-  // Close on Escape and lock background scroll while open.
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
     };
-    const previousOverflow = document.body.style.overflow;
 
+    const previousOverflow = document.body.style.overflow;
     document.addEventListener("keydown", onKeyDown);
     document.body.style.overflow = "hidden";
 
@@ -117,14 +128,15 @@ function Modal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-      onClick={onClose}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
@@ -143,25 +155,56 @@ function Modal({
 function PhotoDialog({
   onClose,
   onSelect,
+  uploading,
 }: {
   onClose: () => void;
-  onSelect: (file: File) => void;
+  onSelect: (file: File) => Promise<void>;
+  uploading: boolean;
 }) {
   const titleId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState("");
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) onSelect(file);
-    onClose();
-  };
+  async function handleChange(
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setError("");
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("Choose a JPG, PNG, or WebP image.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_PHOTO_SIZE) {
+      setError("Your image must be no larger than 5 MB.");
+      event.target.value = "";
+      return;
+    }
+
+    try {
+      await onSelect(file);
+      onClose();
+    } catch (err) {
+      setError(errorMessage(err, "Upload failed. Please try again."));
+    } finally {
+      event.target.value = "";
+    }
+  }
 
   return (
-    <Modal titleId={titleId} onClose={onClose}>
+    <Modal titleId={titleId} onClose={uploading ? () => {} : onClose}>
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-50 text-[#267b32]">
         <Camera className="h-6 w-6" />
       </div>
 
-      <h3 id={titleId} className="mt-4 text-center text-lg font-semibold text-gray-900">
+      <h3
+        id={titleId}
+        className="mt-4 text-center text-lg font-semibold text-gray-900"
+      >
         Update profile picture
       </h3>
 
@@ -169,16 +212,34 @@ function PhotoDialog({
         Choose a new photo for your Parrot Picks account.
       </p>
 
-      <label className="mt-5 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#267b32] px-4 text-sm font-semibold text-white transition hover:bg-[#1d6027]">
-        <Camera className="h-4 w-4" />
-        Choose photo
-        <input
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="sr-only"
-          onChange={handleChange}
-        />
-      </label>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        disabled={uploading}
+        onChange={handleChange}
+      />
+
+      <button
+        type="button"
+        disabled={uploading}
+        onClick={() => inputRef.current?.click()}
+        className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#267b32] px-4 text-sm font-semibold text-white transition hover:bg-[#1d6027] disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {uploading ? (
+          <LoaderCircle className="h-4 w-4 animate-spin" />
+        ) : (
+          <Camera className="h-4 w-4" />
+        )}
+        {uploading ? "Uploading photo..." : "Choose photo"}
+      </button>
+
+      {error && (
+        <p role="alert" className="mt-3 text-center text-sm text-red-600">
+          {error}
+        </p>
+      )}
 
       <p className="mt-3 text-center text-xs text-gray-400">
         JPG, PNG or WebP. Maximum 5 MB.
@@ -190,9 +251,11 @@ function PhotoDialog({
 function LogoutDialog({
   onClose,
   onConfirm,
+  loading,
 }: {
   onClose: () => void;
   onConfirm: () => void;
+  loading: boolean;
 }) {
   const titleId = useId();
 
@@ -202,7 +265,10 @@ function LogoutDialog({
         <LogOut className="h-6 w-6" />
       </div>
 
-      <h3 id={titleId} className="mt-4 text-center text-lg font-semibold text-gray-900">
+      <h3
+        id={titleId}
+        className="mt-4 text-center text-lg font-semibold text-gray-900"
+      >
         Log out of your account?
       </h3>
 
@@ -213,72 +279,107 @@ function LogoutDialog({
       <div className="mt-6 grid grid-cols-2 gap-3">
         <button
           type="button"
+          disabled={loading}
           onClick={onClose}
-          className="h-11 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+          className="h-11 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-60"
         >
           Cancel
         </button>
 
         <button
           type="button"
+          disabled={loading}
           onClick={onConfirm}
-          className="flex h-11 items-center justify-center gap-2 rounded-lg bg-red-500 text-sm font-semibold text-white transition hover:bg-red-600"
+          className="flex h-11 items-center justify-center gap-2 rounded-lg bg-red-500 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-60"
         >
-          Log Out
-          <ArrowRight className="h-3 w-3" />
+          {loading ? "Logging out..." : "Log Out"}
+          {!loading && <ArrowRight className="h-3 w-3" />}
         </button>
       </div>
     </Modal>
   );
 }
 
-
-
 export default function DashboardPage() {
   const router = useRouter();
 
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [dialog, setDialog] = useState<"photo" | "logout" | null>(null);
-  const [profileImage, setProfileImage] = useState(DEFAULT_AVATAR);
-
-  // Track the current blob URL so it can be released when replaced/unmounted.
-  const objectUrlRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-    };
-  }, []);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [pageError, setPageError] = useState("");
 
   const closeDialog = useCallback(() => setDialog(null), []);
 
-  const handlePhotoSelect = useCallback((file: File) => {
-    if (!file.type.startsWith("image/")) return;
+  const loadProfile = useCallback(async () => {
+    setLoading(true);
+    setPageError("");
 
-    if (file.size > MAX_PHOTO_SIZE) {
-      alert("Please select an image smaller than 5 MB.");
+    try {
+      const result = await api<ProfileResponse>("/api/profile");
+      setUser(result.user);
+    } catch (error) {
+      setPageError(errorMessage(error, "Could not load your profile."));
+
+      if (error instanceof Error && "status" in error) {
+        const status = (error as { status?: number }).status;
+        if (status === 401 || status === 403) router.replace("/login");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
+
+  const handlePhotoSelect = useCallback(async (file: File) => {
+    const formData = new FormData();
+    formData.append("photo", file);
+
+    setUploading(true);
+
+    try {
+      const result = await api<ProfileResponse>("/api/profile/photo", {
+        method: "POST",
+        body: formData,
+      });
+
+      setUser(result.user);
+    } finally {
+      setUploading(false);
+    }
+  }, []);
+
+  const handleLogout = useCallback(async () => {
+    setLoggingOut(true);
+
+    try {
+      await api("/api/auth/logout", { method: "POST" });
+    } catch (error) {
+      setPageError(errorMessage(error, "Could not log out."));
+      setLoggingOut(false);
+      setDialog(null);
       return;
     }
 
-    // Object URLs avoid encoding the whole file to a base64 string in memory.
-    const url = URL.createObjectURL(file);
-    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-    objectUrlRef.current = url;
-    setProfileImage(url);
-  }, []);
-
-  const handleLogout = useCallback(() => {
-    router.push("/login");
+    router.replace("/login");
+    router.refresh();
   }, [router]);
 
-  const fullName = `${USER.firstname} ${USER.surname}`;
-  const isLocalImage = profileImage.startsWith("blob:");
+  const fullName = user
+    ? `${user.firstname} ${user.surname}`.trim()
+    : "Your profile";
+
+  const profileImage = user?.profilePicture || DEFAULT_AVATAR;
 
   return (
-    <main className="relative isolate overflow-hidden px-3 py-8 sm:px-6 sm:py-10 lg:px-8">
-      {/* Football background */}
+    <main className="relative isolate min-h-screen overflow-hidden px-3 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="pointer-events-none absolute inset-0 -z-20">
         <Image
-          src={Football.src}
+          src={Football}
           alt=""
           fill
           priority
@@ -286,44 +387,60 @@ export default function DashboardPage() {
           className="object-cover object-center"
         />
       </div>
+
       <div className="pointer-events-none absolute inset-0 -z-10 bg-white/45" />
 
       <section className="mx-auto max-w-3xl overflow-hidden rounded-xl border-[3px] border-[#57945a] bg-[#e8f1e7] shadow-sm">
-        {/* Profile */}
         <div className="flex min-h-[360px] flex-col items-center justify-center px-5 pb-10 pt-12 sm:min-h-[390px] sm:pt-14">
           <div className="relative">
-            <div className="relative h-36 w-36 overflow-hidden rounded-full border-2 border-white shadow-sm sm:h-40 sm:w-40">
-              <Image
-                src={profileImage}
-                alt={fullName}
-                fill
-                priority
-                sizes="160px"
-                // Blob URLs can't go through the Next.js image optimizer.
-                unoptimized={isLocalImage}
-                className="object-cover"
-              />
+            <div className="relative h-36 w-36 overflow-hidden rounded-full border-2 border-white bg-white shadow-sm sm:h-40 sm:w-40">
+              {user ? (
+                <Image
+                  src={profileImage}
+                  alt={fullName}
+                  fill
+                  priority
+                  unoptimized
+                  sizes="160px"
+                  className="object-cover"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-gray-400">
+                  <User className="h-12 w-12" />
+                </div>
+              )}
             </div>
 
             <button
               type="button"
+              disabled={!user || loading}
               onClick={() => setDialog("photo")}
               aria-label="Edit profile picture"
-              className="absolute -bottom-8 left-1/2 flex h-[68px] w-[68px] -translate-x-1/2 items-center justify-center rounded-full border-2 border-[#a6cba2] bg-[#edf5e9] text-[#267b32] shadow-sm transition hover:bg-white"
+              className="absolute -bottom-8 left-1/2 flex h-[68px] w-[68px] -translate-x-1/2 items-center justify-center rounded-full border-2 border-[#a6cba2] bg-[#edf5e9] text-[#267b32] shadow-sm transition hover:bg-white disabled:opacity-50"
             >
               <SquarePen className="h-6 w-6" />
             </button>
           </div>
 
           <div className="mt-12 text-center">
-            <h1 className="text-xl font-bold uppercase tracking-tight text-black">
-              {fullName}
-            </h1>
-            <p className="mt-1 text-xs font-medium text-[#333]">{USER.username}</p>
+            {loading ? (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+                Loading profile...
+              </div>
+            ) : (
+              <>
+                <h1 className="text-xl font-bold uppercase tracking-tight text-black">
+                  {fullName}
+                </h1>
+                <p className="mt-1 text-xs font-medium text-[#333]">
+                  {user?.username}
+                </p>
+              </>
+            )}
           </div>
         </div>
 
-        {/* User information heading */}
         <div className="flex items-center gap-3 bg-[#e8f1e7] px-5 pb-3 pt-1 sm:px-7">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black">
             <User aria-hidden className="h-3.5 w-3.5" />
@@ -333,15 +450,47 @@ export default function DashboardPage() {
           </h2>
         </div>
 
-        {/* Account menu */}
         <nav
           aria-label="Account"
           className="min-h-[420px] bg-[#d5d5db] px-4 py-8 sm:px-7 sm:py-10 lg:min-h-[480px]"
         >
+          {pageError && (
+            <div
+              role="alert"
+              className="mb-5 flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700"
+            >
+              <span className="flex-1">{pageError}</span>
+              <button
+                type="button"
+                onClick={() => void loadProfile()}
+                className="shrink-0 font-semibold underline"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {user && !loading && (
+            <div className="mb-5 flex flex-wrap gap-x-4 gap-y-2 rounded-xl bg-white p-4 text-sm text-gray-600">
+              <span className="flex items-center gap-1.5">
+                {user.emailVerified ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                ) : (
+                  <span className="h-2 w-2 rounded-full bg-amber-500" />
+                )}
+                {user.emailVerified ? "Email verified" : "Email not verified"}
+              </span>
+              <span className="break-all">{user.email}</span>
+            </div>
+          )}
+
           <ul className="space-y-3.5">
             {ACCOUNT_ITEMS.map(({ title, icon, href }) => (
               <li key={href}>
-                <Link href={href} className={`${rowClasses} hover:bg-[#f7fbf6]`}>
+                <Link
+                  href={href}
+                  className={`${rowClasses} hover:bg-[#f7fbf6]`}
+                >
                   <MenuRowContent icon={icon} title={title} />
                 </Link>
               </li>
@@ -361,10 +510,19 @@ export default function DashboardPage() {
       </section>
 
       {dialog === "photo" && (
-        <PhotoDialog onClose={closeDialog} onSelect={handlePhotoSelect} />
+        <PhotoDialog
+          onClose={closeDialog}
+          onSelect={handlePhotoSelect}
+          uploading={uploading}
+        />
       )}
+
       {dialog === "logout" && (
-        <LogoutDialog onClose={closeDialog} onConfirm={handleLogout} />
+        <LogoutDialog
+          onClose={closeDialog}
+          onConfirm={handleLogout}
+          loading={loggingOut}
+        />
       )}
     </main>
   );

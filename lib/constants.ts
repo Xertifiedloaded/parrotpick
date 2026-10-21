@@ -1,4 +1,3 @@
-
 export const SESSION_COOKIE = "pp_session";
 export const PENDING_COOKIE = "pp_verify";
 
@@ -11,8 +10,8 @@ export const JWT_AUD_VERIFY = "email-verification";
 
 export const OTP = {
   LENGTH: 6,
-  TTL_MS: 10 * 60 * 1000, 
-  RESEND_COOLDOWN_S: 60, 
-  MAX_RESENDS: 4, 
-  MAX_ATTEMPTS: 5, 
+  TTL_MS: 10 * 60 * 1000,
+  RESEND_COOLDOWN_S: 60,
+  MAX_RESENDS: 4,
+  MAX_ATTEMPTS: 5,
 } as const;
