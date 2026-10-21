@@ -12,7 +12,7 @@ import {
   Play,
   Star,
 } from "lucide-react";
-
+import Football from '@/assets/images/football.jpg'
 import Bro from "@/assets/images/bro.png";
 import faqImage from '@/assets/images/faq_image.png'
 const teams = {
@@ -296,10 +296,9 @@ export default function HomePage() {
         </a>
       </section>
 
-      {/* Main hero banner */}
       <section className="relative isolate min-h-[330px] overflow-hidden border-y border-white/60 sm:min-h-[390px] lg:min-h-[440px]">
         <img
-          src="https://images.unsplash.com/photo-1508098682722-e99c643e7f0b?auto=format&fit=crop&w=2000&q=90"
+          src={Football.src}
           alt="Football stadium"
           className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
         />
@@ -347,7 +346,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats */}
+
       <section className="mx-auto grid max-w-7xl grid-cols-2 gap-3 px-5 py-10 sm:grid-cols-4 sm:gap-5 sm:py-14 lg:px-10">
         {[
           { value: "100%", label: "Free to play" },

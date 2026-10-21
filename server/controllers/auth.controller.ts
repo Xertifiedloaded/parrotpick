@@ -39,7 +39,6 @@ export const authController = {
     rateLimit(`login:ip:${clientIp(req)}`, 20, 15 * MIN);
 
     const input = await parseBody(req, loginSchema);
-    // Also limit per account so one identifier can't be brute-forced from many IPs
     rateLimit(`login:id:${input.identifier}`, 10, 15 * MIN);
 
     const { user, needsVerification } = await authService.login(input);

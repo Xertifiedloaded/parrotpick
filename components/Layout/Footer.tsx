@@ -15,14 +15,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Logo from "@/components/Logo";
 
 const resourceLinks = [
-  ["Home", "/#home"],
+  ["Home", "/"],
   ["About Us", "/#home"],
   ["Fixtures", "/#fixtures"],
   ["Leaderboard", "/#leaderboard"],
   ["Results", "/#results"],
   ["Refer a Friend", "/#predictions"],
   ["Contact Us", "#footer"],
-  ["FAQs", "/#faqs"],
+  ["FAQs", "/faqs"],
 ];
 
 const legalLinks = [
