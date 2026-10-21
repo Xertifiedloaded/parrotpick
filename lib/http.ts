@@ -1,11 +1,17 @@
+import { unstable_rethrow } from "next/navigation";
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError, type ZodTypeAny, type z } from "zod";
 import { AppError } from "@/lib/errors";
 
 type Handler = (req: NextRequest) => Promise<NextResponse>;
 
+const NO_STORE = { "Cache-Control": "no-store" } as const;
+
 export function ok<T>(data: T, message?: string, status = 200) {
-  return NextResponse.json({ success: true, message, data }, { status });
+  return NextResponse.json(
+    { success: true, message, data },
+    { status, headers: NO_STORE },
+  );
 }
 
 export function errorResponse(
@@ -23,14 +29,16 @@ export function errorResponse(
       retryAfter: extra.retryAfter,
       data: extra.data,
     },
-    { status },
+    { status, headers: NO_STORE },
   );
   if (extra.retryAfter) res.headers.set("Retry-After", String(extra.retryAfter));
   return res;
 }
 
-/** Parses and validates a JSON body. Throws AppError / ZodError. */
-export async function parseBody<S extends ZodTypeAny>(req: NextRequest, schema: S): Promise<z.infer<S>> {
+export async function parseBody<S extends ZodTypeAny>(
+  req: NextRequest,
+  schema: S,
+): Promise<z.infer<S>> {
   let json: unknown;
   try {
     json = await req.json();
@@ -58,7 +66,6 @@ function toErrorResponse(err: unknown): NextResponse {
     });
   }
 
-  // Prisma unique constraint violation (race between check and insert)
   if (typeof err === "object" && err !== null && (err as { code?: string }).code === "P2002") {
     return errorResponse(409, "CONFLICT", "An account with these details already exists.");
   }
@@ -67,12 +74,14 @@ function toErrorResponse(err: unknown): NextResponse {
   return errorResponse(500, "INTERNAL_ERROR", "Something went wrong. Please try again.");
 }
 
-/** Wraps a controller so every thrown error becomes a consistent JSON response. */
 export function handle(fn: Handler): Handler {
   return async (req) => {
     try {
       return await fn(req);
     } catch (err) {
+      // Let Next.js internals (prerender bailout, redirect, notFound) propagate.
+      // Must run before any error mapping/logging.
+      unstable_rethrow(err);
       return toErrorResponse(err);
     }
   };
