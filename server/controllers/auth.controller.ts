@@ -80,7 +80,6 @@ export const authController = {
       const user = await authService.getUser(userId);
       return ok({ user: toPublicUser(user) });
     } catch (err) {
-      // Token is valid but the user was deleted: drop the stale cookie
       if (err instanceof AppError && err.status === 401) {
         const res = errorResponse(401, err.code, err.message);
         clearSessionCookie(res);

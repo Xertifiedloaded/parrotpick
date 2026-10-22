@@ -22,7 +22,7 @@ export const userRepository = {
       where: { referralCode },
     }),
 
-  // Fetch the user and related profile in one query.
+
   findByIdWithProfile: (id: string) =>
     prisma.user.findUnique({
       where: { id },

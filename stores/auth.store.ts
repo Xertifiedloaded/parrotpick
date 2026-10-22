@@ -88,8 +88,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ user, status: "authenticated", verification: null });
       return "authenticated";
     } catch (err) {
-      // Credentials were right but the email isn't verified yet.
-      // The server has set the pending cookie and (re)sent a code if needed.
       if (err instanceof ApiError && err.code === "EMAIL_NOT_VERIFIED") {
         set({ user: null, status: "unauthenticated", verification: null });
         return "needs-verification";
@@ -108,7 +106,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         password: input.password,
       },
     });
-    // Account exists but is unverified: not logged in yet.
     set({ user, status: "unauthenticated", verification: null });
   },
 

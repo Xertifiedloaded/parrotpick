@@ -74,7 +74,7 @@ export default function LoginPage() {
             </div>
 
             <form onSubmit={handleLogin} className="space-y-4" noValidate>
-              {/* Email / Username */}
+  
               <div>
                 <label htmlFor="identifier" className="mb-1.5 block text-sm font-medium text-[#686868]">
                   Email / Username
@@ -90,8 +90,6 @@ export default function LoginPage() {
                   className="h-12 w-full rounded-md border border-[#bcbcbc] bg-white px-3 text-sm text-gray-800 outline-none transition placeholder:text-[11px] placeholder:text-gray-400 focus:border-[#287632] focus:ring-2 focus:ring-[#287632]/15"
                 />
               </div>
-
-              {/* Password */}
               <div>
                 <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-[#686868]">
                   Password
@@ -118,7 +116,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="mt-1.5 text-right">
-                  <Link href="/forgot-password" className="text-[11px] text-gray-500 transition hover:text-[#287632] hover:underline">
+                  <Link href="/auth/forgot-password" className="text-[11px] text-gray-500 transition hover:text-[#287632] hover:underline">
                     Forgot Password
                   </Link>
                 </div>
@@ -131,7 +129,6 @@ export default function LoginPage() {
                 </p>
               )}
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={loading}
@@ -142,14 +139,12 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* Divider */}
             <div className="my-7 flex items-center gap-3">
               <div className="h-px flex-1 bg-gray-200" />
               <span className="text-[11px] font-medium text-gray-400">OR</span>
               <div className="h-px flex-1 bg-gray-200" />
             </div>
 
-            {/* Google */}
             <button
               type="button"
               onClick={() => {

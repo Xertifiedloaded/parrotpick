@@ -4,10 +4,7 @@ export const signupSchema = z.object({
   surname: z.string().trim().min(1, "Surname is required.").max(50, "Surname is too long."),
   firstname: z.string().trim().min(1, "Firstname is required.").max(50, "Firstname is too long."),
   email: z.string().trim().toLowerCase().max(254, "Email is too long.").email("Enter a valid email address."),
-  // bcrypt only uses the first 72 bytes, so cap it
   password: z.string().min(8, "Password must be at least 8 characters.").max(72, "Password must be 72 characters or fewer."),
-  // Optional. Blank or missing becomes undefined; otherwise it must match the
-  // generator's alphabet (no I, O, 0, 1) and length (8, or 10 for the fallback code).
   referralCode: z.preprocess(
     (v) => {
       if (typeof v !== "string") return undefined;

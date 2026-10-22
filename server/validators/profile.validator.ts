@@ -3,7 +3,6 @@ import { z } from "zod";
 export const MIN_AGE = 18;
 const MAX_AGE = 120;
 
-/** Trims; an empty string clears the field (stored as null). */
 const nullableText = (label: string, max: number) =>
   z
     .string()
@@ -47,8 +46,6 @@ const dateOfBirthSchema = z
     }
 
     const date = new Date(`${value}T00:00:00.000Z`);
-
-    // Rejects impossible dates such as 2000-02-31.
     if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
       return invalid("Enter a valid date of birth.");
     }

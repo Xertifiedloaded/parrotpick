@@ -57,7 +57,8 @@ model User {
 
   referralsMade     Referral[] @relation("ReferrerReferrals")
   referralReceived  Referral?  @relation("ReferredReferral")
-  verification EmailVerification?
+  verification  EmailVerification?
+  passwordReset PasswordReset?
   profile      Profile?
   bankAccounts BankAccount[]
   transactions Transaction[]
@@ -79,15 +80,22 @@ model EmailVerification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// ─────────────────────────── PROFILE ───────────────────────────
+model PasswordReset {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @unique @db.ObjectId
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  lastSentAt DateTime
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
 
 model Profile {
   id     String @id @default(auto()) @map("_id") @db.ObjectId
   userId String @unique @db.ObjectId
-
-  // Identity / display
-  profilePicture   String?   // URL (Cloudinary, S3, etc.)
-  profilePictureId String?   // provider public_id, used for deleting/replacing
+  profilePicture   String?   
+  profilePictureId String?   
   bio              String?
   phone            String?
   country          String?   @default("NG")
@@ -96,15 +104,12 @@ model Profile {
   address          String?
   dateOfBirth      DateTime?
 
-  // Wallet (stored in MINOR units, e.g. kobo: ₦100.50 = 10050n).
-  // MongoDB in Prisma does not support Decimal, so BigInt avoids float errors.
   balance       BigInt @default(0)
   bonusBalance  BigInt @default(0)
   totalDeposits BigInt @default(0)
   totalWithdrawals BigInt @default(0)
   currency      String @default("NGN")
 
-  // Prediction stats (denormalised for fast dashboards)
   totalPredictions Int @default(0)
   wonPredictions   Int @default(0)
   lostPredictions  Int @default(0)
@@ -148,11 +153,11 @@ model Transaction {
   userId        String            @db.ObjectId
   type          TransactionType
   status        TransactionStatus @default(PENDING)
-  amount        BigInt            // minor units, always positive
+  amount        BigInt           
   balanceBefore BigInt?
   balanceAfter  BigInt?
   currency      String            @default("NGN")
-  reference     String            @unique // your internal ref / idempotency key
+  reference     String            @unique 
   providerRef   String?           // Paystack / Flutterwave reference
   description   String?
   metadata      Json?
@@ -171,12 +176,11 @@ model Transaction {
   @@index([type, status])
 }
 
-// ─────────────────────────── PREDICTIONS ───────────────────────────
 
 model Prediction {
   id     String @id @default(auto()) @map("_id") @db.ObjectId
   userId String @db.ObjectId
-  eventId    String?   // external fixture/event id
+  eventId    String?   
   eventName  String    // e.g. "Arsenal vs Chelsea"
   sport      String?
   league     String?
@@ -186,7 +190,7 @@ model Prediction {
 
   // Money
   odds   Float
-  stake  BigInt           // minor units
+  stake  BigInt           
   payout BigInt  @default(0)
 
   status    PredictionStatus @default(PENDING)
@@ -207,7 +211,7 @@ model Prediction {
 model Referral {
   id         String         @id @default(auto()) @map("_id") @db.ObjectId
   referrerId String         @db.ObjectId
-  referredId String         @unique @db.ObjectId // a user can only be referred once
+  referredId String         @unique @db.ObjectId 
   status     ReferralStatus @default(PENDING)
   rewardAmount BigInt       @default(0)
   qualifiedAt DateTime?

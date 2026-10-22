@@ -18,7 +18,6 @@ function hasPrismaCode(error: unknown, code: string): boolean {
   );
 }
 
-/** Verifies the real file signature instead of trusting the client MIME header. */
 function isSupportedImage(bytes: Buffer): boolean {
   const isJpeg =
     bytes.length >= 3 &&
@@ -105,13 +104,13 @@ export const profileService = {
       notificationsEnabled,
     } = input;
 
-    // Fields that live on the User model.
+
     const data: Prisma.UserUpdateInput = {};
     if (firstname !== undefined) data.firstname = firstname;
     if (surname !== undefined) data.surname = surname;
     if (username !== undefined) data.username = username;
 
-    // Fields that live on the Profile model. undefined = leave unchanged, null = clear.
+
     const profileData: Prisma.ProfileCreateWithoutUserInput = {};
     if (bio !== undefined) profileData.bio = bio;
     if (phone !== undefined) profileData.phone = phone;
@@ -137,7 +136,6 @@ export const profileService = {
 
       return publicProfile(user);
     } catch (error) {
-      // The unique index is the source of truth, so there is no check-then-write race.
       if (hasPrismaCode(error, "P2002")) {
         throw new AppError(
           409,
@@ -220,7 +218,6 @@ export const profileService = {
         include: { profile: true },
       });
 
-      // Remove the old image only after the database update succeeds.
       const previousId = user.profile?.profilePictureId;
       if (previousId && previousId !== uploaded.public_id) {
         await destroyImage(previousId, "Old image cleanup");
@@ -228,7 +225,7 @@ export const profileService = {
 
       return publicProfile(updated);
     } catch (error) {
-      // Roll back the new upload if the database write failed.
+  
       await destroyImage(uploaded.public_id, "Rollback cleanup");
       throw error;
     }
@@ -240,10 +237,8 @@ export const profileService = {
       select: { profilePictureId: true },
     });
 
-    // Nothing to remove, and no empty Profile row gets created.
     if (!profile) return { profilePicture: null };
 
-    // Clear the database first; Cloudinary cleanup is best-effort.
     await prisma.profile.update({
       where: { userId },
       data: { profilePicture: null, profilePictureId: null },
