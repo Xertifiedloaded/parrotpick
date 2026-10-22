@@ -1,0 +1,225 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum PredictionStatus {
+  PENDING
+  WON
+  LOST
+  VOID
+  CASHED_OUT
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  STAKE
+  PAYOUT
+  REFUND
+  REFERRAL_BONUS
+  ADJUSTMENT
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REVERSED
+}
+
+enum ReferralStatus {
+  PENDING    
+  QUALIFIED   
+  REWARDED    
+}
+
+
+model User {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  surname         String
+  firstname       String
+  username        String    @unique
+  email           String    @unique
+  passwordHash    String?
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  referralCode String  @unique           
+  referredById String? @db.ObjectId      
+  referredBy   User?   @relation("UserReferrals", fields: [referredById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  referrals    User[]  @relation("UserReferrals")
+
+  referralsMade     Referral[] @relation("ReferrerReferrals")
+  referralReceived  Referral?  @relation("ReferredReferral")
+  verification  EmailVerification?
+  passwordReset PasswordReset?
+  profile      Profile?
+  bankAccounts BankAccount[]
+  transactions Transaction[]
+  predictions  Prediction[]
+
+  @@index([referredById])
+}
+
+model EmailVerification {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @unique @db.ObjectId
+  codeHash    String
+  expiresAt   DateTime
+  attempts    Int      @default(0)
+  resendCount Int      @default(0)
+  lastSentAt  DateTime
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordReset {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @unique @db.ObjectId
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  lastSentAt DateTime
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Profile {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @unique @db.ObjectId
+  profilePicture   String?   
+  profilePictureId String?   
+  bio              String?
+  phone            String?
+  country          String?   @default("NG")
+  state            String?
+  city             String?
+  address          String?
+  dateOfBirth      DateTime?
+
+  balance       BigInt @default(0)
+  bonusBalance  BigInt @default(0)
+  totalDeposits BigInt @default(0)
+  totalWithdrawals BigInt @default(0)
+  currency      String @default("NGN")
+
+  totalPredictions Int @default(0)
+  wonPredictions   Int @default(0)
+  lostPredictions  Int @default(0)
+  totalStaked      BigInt @default(0)
+  totalWinnings    BigInt @default(0)
+  referralEarnings BigInt @default(0)
+  referralCount    Int    @default(0)
+  kycStatus           String  @default("NONE") // NONE | PENDING | VERIFIED | REJECTED
+  notificationsEnabled Boolean @default(true)
+  twoFactorEnabled    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+
+model BankAccount {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @db.ObjectId
+  bankName      String
+  bankCode      String?
+  accountNumber String
+  accountName   String
+  isDefault     Boolean  @default(false)
+  isVerified    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@unique([userId, accountNumber, bankCode])
+  @@index([userId])
+}
+
+
+model Transaction {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String            @db.ObjectId
+  type          TransactionType
+  status        TransactionStatus @default(PENDING)
+  amount        BigInt           
+  balanceBefore BigInt?
+  balanceAfter  BigInt?
+  currency      String            @default("NGN")
+  reference     String            @unique 
+  providerRef   String?           // Paystack / Flutterwave reference
+  description   String?
+  metadata      Json?
+
+  bankAccountId String?     @db.ObjectId
+  predictionId  String?     @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankAccount BankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  prediction  Prediction?  @relation(fields: [predictionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([type, status])
+}
+
+
+model Prediction {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+  eventId    String?   
+  eventName  String    // e.g. "Arsenal vs Chelsea"
+  sport      String?
+  league     String?
+  market     String    // e.g. "1X2", "Over/Under 2.5"
+  pick       String    // e.g. "Home", "Over 2.5"
+  eventStart DateTime?
+
+  // Money
+  odds   Float
+  stake  BigInt           
+  payout BigInt  @default(0)
+
+  status    PredictionStatus @default(PENDING)
+  result    String?          // e.g. final score "2-1"
+  settledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([userId, createdAt])
+  @@index([userId, status])
+}
+
+
+model Referral {
+  id         String         @id @default(auto()) @map("_id") @db.ObjectId
+  referrerId String         @db.ObjectId
+  referredId String         @unique @db.ObjectId 
+  status     ReferralStatus @default(PENDING)
+  rewardAmount BigInt       @default(0)
+  qualifiedAt DateTime?
+  rewardedAt  DateTime?
+  createdAt   DateTime      @default(now())
+
+  referrer User @relation("ReferrerReferrals", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred User @relation("ReferredReferral", fields: [referredId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId])
+}
